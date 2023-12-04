@@ -69,7 +69,7 @@ def main():
 def guardar_respuestas(respuestas):
     # Intentar cargar el archivo CSV existente si existe
     try:
-        df_existente = pd.read_csv("C:/Users/kevin/OneDrive/Documents/Latino/respuestas_encuesta.csv")
+        df_existente = pd.read_csv("respuestas_encuesta.csv")
     except FileNotFoundError:
         # Si el archivo no existe, crear un DataFrame vacío
         df_existente = pd.DataFrame()
@@ -81,7 +81,7 @@ def guardar_respuestas(respuestas):
     df_final = pd.concat([df_existente, df_nuevo], ignore_index=True)
 
     # Guardar el DataFrame combinado en el archivo CSV
-    df_final.to_csv("C:/Users/kevin/OneDrive/Documents/Latino/respuestas_encuesta.csv", index=False)
+    df_final.to_csv("respuestas_encuesta.csv", index=False)
     st.success("¡Respuestas guardadas!")
 
 main()
