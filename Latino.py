@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+from google.oauth2 import service_account
+import gcsfs
 
 def main():
     st.title("Encuesta Corporación Latinoamericana de Estudios")
@@ -65,11 +67,11 @@ def main():
     # Botón para guardar en CSV
     if st.button("Guardar respuestas"):
         guardar_respuestas(respuestas)
-
+'''
 def guardar_respuestas(respuestas):
     # Intentar cargar el archivo CSV existente si existe
     try:
-        df_existente = pd.read_csv("respuestas_encuesta.csv")
+        df_existente = pd.read_csv("C:/Users/kevin/OneDrive/Documents/Latino/respuestas_encuesta.csv")
     except FileNotFoundError:
         # Si el archivo no existe, crear un DataFrame vacío
         df_existente = pd.DataFrame()
@@ -81,7 +83,40 @@ def guardar_respuestas(respuestas):
     df_final = pd.concat([df_existente, df_nuevo], ignore_index=True)
 
     # Guardar el DataFrame combinado en el archivo CSV
-    df_final.to_csv("respuestas_encuesta.csv", index=False)
+    df_final.to_csv("C:/Users/kevin/OneDrive/Documents/Latino/respuestas_encuesta.csv", index=False)
     st.success("¡Respuestas guardadas!")
+'''
+
+
+def guardar_respuestas(respuestas):
+    # Cargar credenciales desde el secreto en formato JSON
+    credentials_info = st.secrets["gcp_service_account"]
+    credentials = service_account.Credentials.from_service_account_info(
+        credentials_info,
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+    )
+
+    # Intentar cargar el archivo CSV existente desde Google Cloud Storage
+    try:
+        with gcsfs.GCSFileSystem(project=credentials.project_id, token=credentials) as fs:
+            with fs.open("gs://respuestas_encuestas/respuestas_encuesta.csv", "rb") as f:
+                df_existente = pd.read_csv(f)
+    except FileNotFoundError:
+        # Si el archivo no existe, crea un DataFrame vacío
+        df_existente = pd.DataFrame()
+
+    # Crea DataFrame a partir del diccionario de respuestas
+    df_nuevo = pd.DataFrame(respuestas, index=[0])
+
+    # Concatena el DataFrame existente con el nuevo
+    df_final = pd.concat([df_existente, df_nuevo], ignore_index=True)
+
+    # Guarda el DataFrame combinado en el archivo CSV en Google Cloud Storage
+    with gcsfs.GCSFileSystem(project=credentials.project_id, token=credentials) as fs:
+        with fs.open("gs://respuestas_encuestas/respuestas_encuesta.csv", "w") as f:
+            df_final.to_csv(f, index=False)
+
+    st.success("¡Respuestas guardadas!")
+
 
 main()
