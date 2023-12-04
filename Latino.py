@@ -3,6 +3,17 @@ import pandas as pd
 from google.oauth2 import service_account
 import gcsfs
 
+# Install required packages
+st.set_page_config(
+    page_title="Encuesta Corporación Latinoamericana de Estudios",
+    page_icon=":clipboard:",
+    layout="wide",
+)
+
+# Additional imports
+import gcsfs
+from google.oauth2 import service_account
+
 def main():
     st.title("Encuesta Corporación Latinoamericana de Estudios")
 
@@ -67,25 +78,6 @@ def main():
     # Botón para guardar en CSV
     if st.button("Guardar respuestas"):
         guardar_respuestas(respuestas)
-'''
-def guardar_respuestas(respuestas):
-    # Intentar cargar el archivo CSV existente si existe
-    try:
-        df_existente = pd.read_csv("C:/Users/kevin/OneDrive/Documents/Latino/respuestas_encuesta.csv")
-    except FileNotFoundError:
-        # Si el archivo no existe, crear un DataFrame vacío
-        df_existente = pd.DataFrame()
-
-    # Crear DataFrame a partir del diccionario de respuestas
-    df_nuevo = pd.DataFrame(respuestas, index=[0])
-
-    # Concatenar el DataFrame existente con el nuevo
-    df_final = pd.concat([df_existente, df_nuevo], ignore_index=True)
-
-    # Guardar el DataFrame combinado en el archivo CSV
-    df_final.to_csv("C:/Users/kevin/OneDrive/Documents/Latino/respuestas_encuesta.csv", index=False)
-    st.success("¡Respuestas guardadas!")
-'''
 
 
 def guardar_respuestas(respuestas):
@@ -99,11 +91,15 @@ def guardar_respuestas(respuestas):
     # Intentar cargar el archivo CSV existente desde Google Cloud Storage
     try:
         with gcsfs.GCSFileSystem(project=credentials.project_id, token=credentials) as fs:
-            with fs.open("gs://respuestas_encuestas/respuestas_encuesta.csv", "rb") as f:
-                df_existente = pd.read_csv(f)
-    except FileNotFoundError:
-        # Si el archivo no existe, crea un DataFrame vacío
-        df_existente = pd.DataFrame()
+            try:
+                with fs.open("gs://respuestas_encuestas/respuestas_encuesta.csv", "rb") as f:
+                    df_existente = pd.read_csv(f)
+            except FileNotFoundError:
+                # Si el archivo no existe, crea un DataFrame vacío
+                df_existente = pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error al cargar el archivo CSV existente: {e}")
+        return
 
     # Crea DataFrame a partir del diccionario de respuestas
     df_nuevo = pd.DataFrame(respuestas, index=[0])
@@ -113,10 +109,12 @@ def guardar_respuestas(respuestas):
 
     # Guarda el DataFrame combinado en el archivo CSV en Google Cloud Storage
     with gcsfs.GCSFileSystem(project=credentials.project_id, token=credentials) as fs:
-        with fs.open("gs://respuestas_encuestas/respuestas_encuesta.csv", "w") as f:
-            df_final.to_csv(f, index=False)
-
-    st.success("¡Respuestas guardadas!")
+        try:
+            with fs.open("gs://respuestas_encuestas/respuestas_encuesta.csv", "w") as f:
+                df_final.to_csv(f, index=False)
+            st.success("¡Respuestas guardadas!")
+        except Exception as e:
+            st.error(f"Error al guardar el archivo CSV: {e}")
 
 
 main()
